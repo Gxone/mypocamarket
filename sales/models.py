@@ -1,6 +1,3 @@
-import operator
-from functools import reduce
-
 from django.db import models
 from django.db.models import Window, F
 from django.db.models.functions import RowNumber
@@ -50,11 +47,11 @@ class Sale(models.Model):
         """
         최근 거래가를 반환합니다.
         """
-        recent_order_price_list = Sale.objects.filter(
+        recent_order_prices = Sale.objects.filter(
             state=2,  # (2, '판매 완료')
             photocard=self.photocard
-        ).order_by('-sold_date').values_list('price')[:5]
-        return list(reduce(operator.add, recent_order_price_list, []))
+        ).order_by('-sold_date').values_list('price', flat=True)[:5]
+        return list(recent_order_prices)
 
     @classmethod
     def get_annotate_fields(cls):
@@ -62,6 +59,7 @@ class Sale(models.Model):
         자주 쓰이는 annotate 필드 표현식을 반환합니다.
         """
         return {
+            # 최소 가격을 구하기 위한 표현식
             'rank_in_price': Window(
                 expression=RowNumber(),
                 partition_by=F('photocard_id'),
